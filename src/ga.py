@@ -85,17 +85,45 @@ class Individual_Grid(object):
         # do crossover with other
         left = 1
         right = width - 1
-        for y in range(height):
+        # inverse so it populates from top to bottom
+
+        not_obstacles = ['-', 'o', 'E']
+        
+        for y in range(height-1, -1, -1):
+            if y < 14:
+                new_genome[y][0] = "-"
+                new_genome[y][width-2] = "-"
             for x in range(left, right):
                 # STUDENT Which one should you take?  Self, or other?  Why?
                 # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
+                #pick a random parent 
+                #if parent 0 is chosen, populate with parent 0 
+                #if parent 1 is chosen, populate with parent 1
                 
-                new_genome[y][x] = 'X'
+                # if new_genome[y][x] in not_obstacles:
+                #     new_genome[y][x] = "-"
 
-                thing = random.randint(0, len(options) - 1)
+                parent = random.randint(0,1)
+                if parent == 1:
+                    new_genome[y][x] = other.genome[y][x]
+                        # Logic for Pit to be crossable
+                
+                if (y == 15):
+                    Individual_Grid.create_pits(new_genome, x= x, y= y)
+                
+                Individual_Grid.pipe(new_genome, x=x, y=y)
+                Individual_Grid.wall_height(new_genome, x=x, y=y)
+                Individual_Grid.enemy_spawn(new_genome, x=x, y=y)
+                Individual_Grid.coin_block_spawn(new_genome, x=x, y=y)
 
-                new_genome[y][x] = options[thing]
-                # 2 >= hole_size <= 3 
+
+
+
+
+                # else:
+                #     if (y == 15):
+                #         Individual_Grid.create_pits(new_genome, x= x, y= y)
+
                 # possible to jump up to walls and or pipes, 4 high, 
                  #      pipes need to have pip bottoms/tops with them
                 # if the previous column has ground or wall or pit, the difference in height <= 4
@@ -108,6 +136,80 @@ class Individual_Grid(object):
         # do mutation; note we're returning a one-element tuple here
         return (Individual_Grid(new_genome),)
 
+    def coin_block_spawn(new_genome, x, y):
+        non_obs = ['o', '-', 'E']
+        if (new_genome[y][x] == "?" or new_genome[y][x] == "M"):
+            if y == 14:
+                new_genome[y][x] = '-'
+            if y < 14:
+                if new_genome[y+1][x] not in non_obs or new_genome[y+2][x] not in non_obs:
+                    new_genome[y][x] = '-'
+            
+    def create_pits(new_genome, x, y):
+        randNum = random.randint(0,4)
+        if randNum < 1:
+            if x > 2 and new_genome[y][x-3] == "X":
+                new_genome[y][x] = '-'
+            else:
+                new_genome[y][x] = 'X' 
+        else:
+            new_genome[y][x] = 'X'  
+        
+    def enemy_spawn(new_genome, x, y):
+        obstacle_list = ['X', '?', 'M', 'B', 'T']
+        if y < 15:
+            if new_genome[y][x] == 'E':
+                if new_genome[y+1][x] not in obstacle_list:
+                    new_genome[y][x] = '-'
+
+
+    def wall_height(new_genome, x, y):
+        #check and see if the wall height is 4 or less, otherwise spawn from the list [space, enemy, coin]
+        obstacle_list = ['X', '?', 'M', 'B', '|','T'] # list with obstacles wall, question block, mushroom block, Breakable block, pipe seg, pipe top
+        pipe_list = ['|', 'T'] #list containing pip parts
+        if x < 1:
+            return
+        if(y < 13): # checks if its even possible to be > 4
+            for i in range(1,3): 
+                if new_genome[y+i][x-1] not in obstacle_list:
+                    if new_genome[y+i][x-2] not in pipe_list:
+                        return
+        else:
+            return
+        
+        new_genome[y][x] = "-"
+
+
+        # if not, check if the previous column is completely empty up until that height,
+            #if yes, check if the there is an obstacle at the same height or higher than the wall height being created
+        
+    def pipe(new_genome, x, y):
+        # make the pipe full
+        
+
+        if y > 14:
+            return
+        if new_genome[y][x] != 'T' and new_genome[y][x] != '|':
+            if new_genome[y+1][x] == "|":
+                new_genome[y][x] = 'T'
+
+
+        elif(new_genome[y][x] == "T"): 
+            if new_genome[y][x+1] != '-':
+                new_genome[y][x+1] = '-'
+            if new_genome[y+1][x] == "|":
+                return
+            new_genome[y][x] = '-'
+
+        elif new_genome[y][x] == "|":
+            if new_genome[y][x+1] != '-':
+                new_genome[y][x+1] = '-'
+            if new_genome[y+1][x] == "|":
+                return
+            elif new_genome[y+1][x] == "X" and new_genome[y+1][x+1] == "X":    
+                return
+            
+            new_genome[y][x] = '-'
     # Turn the genome into a level string (easy for this genome)
     def to_level(self):
         return self.genome
@@ -137,6 +239,11 @@ class Individual_Grid(object):
         g[8:14][-1] = ["f"] * 6
         g[14:16][-1] = ["X", "X"]
         return cls(g)
+
+
+
+
+
 
 
 def offset_by_upto(val, variance, min=None, max=None):
@@ -366,10 +473,13 @@ def generate_successors(population):
     results = []
     # STUDENT Design and implement this
     # Hint: Call generate_children() on some individuals and fill up results.
+    # print("------------------",population)
     
-    results += Individual_Grid.generate_children(population[0], population[0])
-
-    
+    for i in range(0, len(population)-1, 2):
+        # print("1:", population[i], " 2", population[i+1])
+    # results += Individual_Grid.generate_children(population[0], population[1])
+        results += Individual_Grid.generate_children(population[i], population[i+1])
+    # print("Results: ", results)
     # Individual_DE.generate_children)
     return results
 
@@ -407,7 +517,7 @@ def ga():
                 now = time.time()
                 # Print out statistics
                 if generation > 0:
-                    print("pop", population)
+                    # print("pop", population)
                     best = max(population, key=Individual.fitness)
                     print("Generation:", str(generation))
                     print("Max fitness:", str(best.fitness()))
@@ -420,7 +530,7 @@ def ga():
                 # STUDENT Determine stopping condition
                 stop_condition = False
                 
-                if generation > 10:
+                if generation > 5:
                     stop_condition = True
                     
                 if stop_condition:
@@ -448,7 +558,7 @@ if __name__ == "__main__":
     print("Best fitness: " + str(best.fitness()))
     now = time.strftime("%m_%d_%H_%M_%S")
     # STUDENT You can change this if you want to blast out the whole generation, or ten random samples, or...
-    for k in range(0, 10):
-        with open("levels/" + now + "_" + str(k) + ".txt", 'w') as f:
-            for row in final_gen[k].to_level():
-                f.write("".join(row) + "\n")
+    # for k in range(0, 10):
+    #     with open("levels/" + now + "_" + str(k) + ".txt", 'w') as f:
+    #         for row in final_gen[k].to_level():
+    #             f.write("".join(row) + "\n")
