@@ -50,7 +50,8 @@ class Individual_Grid(object):
             pathPercentage=0.5,
             emptyPercentage=0.6,
             linearity=-0.5,
-            solvability=2.0
+            solvability=2.0,
+            decorationPercentage = 1
         )
         self._fitness = sum(map(lambda m: coefficients[m] * measurements[m],
                                 coefficients))
@@ -68,11 +69,89 @@ class Individual_Grid(object):
         # STUDENT implement a mutation operator, also consider not mutating this individual
         # STUDENT also consider weighting the different tile types so it's not uniformly random
         # STUDENT consider putting more constraints on this to prevent pipes in the air, etc
+        
+
+        if random.random() < 0.9 and len(genome) > 0:
+
+            
+                               
+            to_change_y = random.randint(0, len(genome) - 1)    
+            dey = genome[to_change_y]
+            to_change_x = random.randint(0, len(dey) - 1)
+            # dex = dey[to_change_x]                      
+                         
+            if to_change_x == 1 or to_change_x == len(dey)-1 or to_change_y == 0 or to_change_y == 15:
+                return genome
+            choice = random.random()       
+            # if dey[dex] == "-":                  
+            
+            if choice < 1.0/3:
+                # move right
+                swap = dey[to_change_x +1]
+                dey[to_change_x +1] = dey[to_change_x]
+                dey[to_change_x] = swap
+            elif choice < 2.0/3:
+                # move left
+                swap = dey[to_change_x - 1]
+                dey[to_change_x - 1] = dey[to_change_x]
+                dey[to_change_x] = swap
+                
+            else:
+                # change block  
+                dex =      options[random.randint(1, len(options) - 1)]
+                new_item = options[random.randint(1, len(options) - 1)]
+
+                for item in dey:                        #for each item in the row
+                    if item == dex:                     #if the item is equal to the random item we want to replace
+                        item = new_item                 #replace the item with a new random item
+                
+                pass
+
+            # options[random.randint(1,len(options) - 1)]
+        
+
+
+
+            # print("Genome", genome)
+            #     if choice < 0.5:         
+            #         x = offset_by_upto(x, width / 8, min=1, max=width - 2)     
+            #     else:                                            
+            #         y = offset_by_upto(y, height / 2, min=0, max=height - 1)   
+            #     # else:                                                          
+            #         # breakable = not de[3]                                      
+            #     new_de = (x, de_type, y)       
+
+
+
+            # elif de_type == 'X':
+
+            # elif de_type == '?':
+
+            # elif de_type == 'M':  
+
+            # elif de_type == 'B':
+
+            # elif de_type == 'o':
+            
+            # elif de_type == '|':    
+            
+            # elif de_type == 'T':
+            
+            # elif de_type == 'E':
+                                             
+
 
         left = 1
         right = width - 1
         for y in range(height):
             for x in range(left, right):
+                # if (y == 15):
+                #     Individual_Grid.create_pits(genome, x= x, y= y)
+                
+                # Individual_Grid.pipe(genome, x=x, y=y)
+                # Individual_Grid.wall_height(genome, x=x, y=y)
+                # Individual_Grid.enemy_spawn(genome, x=x, y=y)
+                # Individual_Grid.coin_block_spawn(genome, x=x, y=y)
                 pass
         return genome
 
@@ -115,6 +194,7 @@ class Individual_Grid(object):
                 Individual_Grid.wall_height(new_genome, x=x, y=y)
                 Individual_Grid.enemy_spawn(new_genome, x=x, y=y)
                 Individual_Grid.coin_block_spawn(new_genome, x=x, y=y)
+                Individual_Grid.gaps(new_genome, x=x, y=y)
 
 
 
@@ -134,6 +214,7 @@ class Individual_Grid(object):
 
                 #pass
         # do mutation; note we're returning a one-element tuple here
+        self.mutate(new_genome)
         return (Individual_Grid(new_genome),)
 
     def coin_block_spawn(new_genome, x, y):
@@ -182,7 +263,26 @@ class Individual_Grid(object):
 
         # if not, check if the previous column is completely empty up until that height,
             #if yes, check if the there is an obstacle at the same height or higher than the wall height being created
+
+    def gaps(new_genome, x, y):
+        #make sure if there is a gap under an obstacle, there needs to be 2 gaps under it
         
+        non_obs = ['o', '-', 'E']
+        if (new_genome[y][x] == "X" or new_genome[y][x] == "B"):
+            
+            if y < 14:
+                if new_genome[y+1][x] in non_obs and new_genome[y+2][x] not in non_obs:
+                    new_genome[y][x] = '-'
+                    new_genome[y+2][x] = '-'
+                    new_genome[y+1][x+1] = '-'
+                    new_genome[y+2][x+1] = '-'
+                    new_genome[y+1][x-1] = '-'
+                    new_genome[y+2][x-1] = '-'
+                # if new_genome[y+1][x+1] in non_obs and new_genome[y+2][x+1] not in non_obs:
+                #     new_genome[y][x] = '-'
+                # if new_genome[y+1][x-1] in non_obs and new_genome[y+2][x-1] not in non_obs:
+                #     new_genome[y][x] = '-'
+
     def pipe(new_genome, x, y):
         # make the pipe full
         
@@ -307,23 +407,23 @@ class Individual_DE(object):
     def mutate(self, new_genome):
         # STUDENT How does this work?  Explain it in your writeup.
         # STUDENT consider putting more constraints on this, to prevent generating weird things
-        if random.random() < 0.1 and len(new_genome) > 0:
-            to_change = random.randint(0, len(new_genome) - 1)
-            de = new_genome[to_change]
-            new_de = de
-            x = de[0]
-            de_type = de[1]
-            choice = random.random()
-            if de_type == "4_block":
-                y = de[2]
-                breakable = de[3]
-                if choice < 0.33:
-                    x = offset_by_upto(x, width / 8, min=1, max=width - 2)
-                elif choice < 0.66:
-                    y = offset_by_upto(y, height / 2, min=0, max=height - 1)
-                else:
-                    breakable = not de[3]
-                new_de = (x, de_type, y, breakable)
+        if random.random() < 0.1 and len(new_genome) > 0:                           #if a random number at 10% to mutate: and the length of the new genome is greater than 0
+            to_change = random.randint(0, len(new_genome) - 1)                      #assign a random integer from 0 to the length of the new genome list minus 1
+            de = new_genome[to_change]                                              # de = the genome to change
+            new_de = de                                                             # set the new_de to the de
+            x = de[0]                                                               # set x to the first element of the de list
+            de_type = de[1]                                                         # set de_type to the second element of the de list
+            choice = random.random()                                                # set choice to a random number
+            if de_type == "4_block":                                                # id the type of de_type is a 4_block
+                y = de[2]                                                           # set y to the 3rd element of de
+                breakable = de[3]                                                   # set breakable to the 4th element of de
+                if choice < 0.33:                                                   # if the choice number is less than .33
+                    x = offset_by_upto(x, width / 8, min=1, max=width - 2)          #set x to the return of the offset_by_upto function
+                elif choice < 0.66:                                                 #else if the choice is less than 66%
+                    y = offset_by_upto(y, height / 2, min=0, max=height - 1)        #set y to the return of the offset_by_upto function
+                else:                                                               #else
+                    breakable = not de[3]                                           #set breakable to not the 4th element of de
+                new_de = (x, de_type, y, breakable)                                 #set the new_de to x, de_type, y, and breakable
             elif de_type == "5_qblock":
                 y = de[2]
                 has_powerup = de[3]  # boolean
@@ -380,9 +480,9 @@ class Individual_DE(object):
                 new_de = (x, de_type, w, y, madeof)
             elif de_type == "2_enemy":
                 pass
-            new_genome.pop(to_change)
-            heapq.heappush(new_genome, new_de)
-        return new_genome
+            new_genome.pop(to_change)                                           #pops off the piece you want to change
+            heapq.heappush(new_genome, new_de)                                  #pushes the new piece onto the genome
+        return new_genome                                                       #returns the new genome
 
     def generate_children(self, other):
         # STUDENT How does this work?  Explain it in your writeup.
@@ -474,11 +574,37 @@ def generate_successors(population):
     # STUDENT Design and implement this
     # Hint: Call generate_children() on some individuals and fill up results.
     # print("------------------",population)
+
     
+    
+    
+
+    beforeTime = time.time()
+    sorted_population = sorted(population, key=lambda individual: individual.fitness())# , reverse=True)
+    afterTime = time.time()
+    print("Time to do Sorting:", afterTime - beforeTime)
+
     for i in range(0, len(population)-1, 2):
-        # print("1:", population[i], " 2", population[i+1])
-    # results += Individual_Grid.generate_children(population[0], population[1])
-        results += Individual_Grid.generate_children(population[i], population[i+1])
+    # Elitests: using the top2 that havent been used in generation yet.
+        child1 = Individual_Grid.generate_children(sorted_population[0], sorted_population[1])
+        
+
+        if child1[0].fitness() > sorted_population[0].fitness():
+            results += child1
+        
+        elif child1[0].fitness() > sorted_population[1].fitness():
+            results += child1
+        else:
+            results += (sorted_population[0],)
+
+        # Roulette
+        choice1 = random.randint(0, len(population) - 1)
+        choice2 = random.randint(0, len(population) - 1)
+        child2 = Individual_Grid.generate_children(sorted_population[choice1], sorted_population[choice2])
+        
+        results += child2
+
+    
     # print("Results: ", results)
     # Individual_DE.generate_children)
     return results
